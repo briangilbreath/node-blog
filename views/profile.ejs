@@ -110,6 +110,31 @@
 		<p>Visit the <a href="http://scotch.io/tutorials/javascript/easy-node-authentication-setup-and-local">tutorial</a>.</p>
 	</div>
 
+
+	<h1>Enter Todos</h1>
+	<form action="/create" method="post" accept-charset="utf-8">
+	  <input type="text" name="content" />
+	</form>
+
+	<div class="text-center">
+
+			<% todos.forEach( function ( todo ){ %>
+			  <p>
+			  	<span><%= todo.content %></span>
+			  	 <span>
+			      <a href="/view/<%= todo._id %>" title="View this todo item">View</a>
+			    </span>
+			    <span>
+			      <a href="/edit/<%= todo._id %>" title="Update this todo item">Edit</a>
+			    </span>
+			    <span>
+			      <a href="/destroy/<%= todo._id %>" title="Delete this todo item">Delete</a>
+			    </span>
+			  </p>
+			<% }); %>
+	</div>
+
+
 </div>
 </body>
 </html>

@@ -28,6 +28,12 @@
 		<p>Visit the <a href="http://scotch.io/tutorials/javascript/easy-node-authentication-setup-and-local">tutorial</a>.</p>
 	</div>
 
+	<div class="text-center">
+	<% todos.forEach( function( todo ){ %>
+	  <p><%= todo.content %></p>
+	<% }); %>
+	</div>
+
 </div>
 </body>
 </html>

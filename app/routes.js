@@ -1,24 +1,110 @@
-module.exports = function(app, passport) {
+module.exports = function(app, passport, express) {
 
+var mongoose = require( 'mongoose' );
+var Todo     = mongoose.model( 'Todo' );
 // normal routes ===============================================================
 
+	
+	//
 	// show the home page (will also have our login links)
 	app.get('/', function(req, res) {
-		res.render('index.ejs');
+		Todo.find( function ( err, todos, count ){
+	    res.render( 'index', {
+	      title : 'Express Todo Example',
+	      todos : todos
+	    });
+	  });
+		
 	});
+
+	//app.get( '/', todo.list );
+
+	// add this before app.use( express.json());
+	app.use( express.bodyParser());
+	
+	// create a todo
+	app.post( '/create',isLoggedIn, function ( req, res ){
+		  new Todo({
+		    content    : req.body.content,
+		    updated_at : Date.now()
+		  }).save( function( err, todo, count ){
+		    res.redirect( '/profile' );
+		  });
+		});
+
+	// delete a todo
+	app.get( '/destroy/:id',isLoggedIn, function ( req, res ){
+	  Todo.findById( req.params.id, function ( err, todo ){
+	    todo.remove( function ( err, todo ){
+	      res.redirect( '/profile' );
+	    });
+	  }); 
+	});
+
+
+	// edit the todo
+	app.get( '/edit/:id', isLoggedIn, function ( req, res ){
+
+	  Todo.find( function ( err, todos ){
+	    res.render( 'edit', {
+	        title   : 'Express Todo Example',
+	        todos   : todos,
+	        current : req.params.id
+	    });
+	  }); 
+	 });
+
+
+	// update the todo
+	app.post( '/update/:id', isLoggedIn, function ( req, res ){
+	  Todo.findById( req.params.id, function ( err, todo ){
+	    todo.content    = req.body.content;
+	    todo.updated_at = Date.now();
+	    todo.save( function ( err, todo, count ){
+	      res.redirect( '/profile' );
+	    });
+	  });
+	});
+
+	// view the individual todo
+	app.get( '/view/:id',  function ( req, res ){
+		
+	   Todo.findById( req.params.id, function ( err, todo ){
+	    res.render( 'view', {
+	        title   : 'Express Todo Example',
+	        todo    : todo,
+	        current : req.params.id
+	    });
+	  }); 
+	 });
+
+
+
 
 	// PROFILE SECTION =========================
 	app.get('/profile', isLoggedIn, function(req, res) {
-		res.render('profile.ejs', {
-			user : req.user
-		});
+	
+		Todo.find( function ( err, todos, count ){
+	    res.render( 'profile.ejs', {
+	      title : 'Express Todo Example',
+	      todos : todos,
+	      user : req.user
+	    });
+	  });
+
 	});
 
 	// LOGOUT ==============================
-	app.get('/logout', function(req, res) {
+	app.get('/logout', isLoggedIn,function(req, res) {
 		req.logout();
 		res.redirect('/');
 	});
+
+
+
+
+	
+
 
 // =============================================================================
 // AUTHENTICATE (FIRST LOGIN) ==================================================
@@ -185,6 +271,14 @@ module.exports = function(app, passport) {
 
 
 };
+
+
+
+
+
+
+
+
 
 // route middleware to ensure user is logged in
 function isLoggedIn(req, res, next) {
