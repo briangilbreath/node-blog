@@ -122,13 +122,13 @@
 			  <p>
 			  	<span><%= todo.content %></span>
 			  	 <span>
-			      <a href="/view/<%= todo._id %>" title="View this todo item">View</a>
+			      <a href="/view/<%= todo.slug %>" title="View this todo item">View</a>
 			    </span>
 			    <span>
-			      <a href="/edit/<%= todo._id %>" title="Update this todo item">Edit</a>
+			      <a href="/edit/<%= todo.slug %>" title="Update this todo item">Edit</a>
 			    </span>
 			    <span>
-			      <a href="/destroy/<%= todo._id %>" title="Delete this todo item">Delete</a>
+			      <a href="/destroy/<%= todo.slug %>" title="Delete this todo item">Delete</a>
 			    </span>
 			  </p>
 			<% }); %>

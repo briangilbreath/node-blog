@@ -14,6 +14,7 @@ var Todo     = mongoose.model( 'Todo' );
 	      todos : todos
 	    });
 	  });
+
 		
 	});
 
@@ -26,15 +27,16 @@ var Todo     = mongoose.model( 'Todo' );
 	app.post( '/create',isLoggedIn, function ( req, res ){
 		  new Todo({
 		    content    : req.body.content,
-		    updated_at : Date.now()
+		    updated_at : Date.now(),
+		    slug: convertToSlug(req.body.content)
 		  }).save( function( err, todo, count ){
 		    res.redirect( '/profile' );
 		  });
 		});
 
 	// delete a todo
-	app.get( '/destroy/:id',isLoggedIn, function ( req, res ){
-	  Todo.findById( req.params.id, function ( err, todo ){
+	app.get( '/destroy/:slug',isLoggedIn, function ( req, res ){
+	  Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
 	    todo.remove( function ( err, todo ){
 	      res.redirect( '/profile' );
 	    });
@@ -43,21 +45,21 @@ var Todo     = mongoose.model( 'Todo' );
 
 
 	// edit the todo
-	app.get( '/edit/:id', isLoggedIn, function ( req, res ){
+	app.get( '/edit/:slug', isLoggedIn, function ( req, res ){
 
 	  Todo.find( function ( err, todos ){
 	    res.render( 'edit', {
 	        title   : 'Express Todo Example',
 	        todos   : todos,
-	        current : req.params.id
+	        current : req.params.slug
 	    });
 	  }); 
 	 });
 
 
 	// update the todo
-	app.post( '/update/:id', isLoggedIn, function ( req, res ){
-	  Todo.findById( req.params.id, function ( err, todo ){
+	app.post( '/update/:slug', isLoggedIn, function ( req, res ){
+	  Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
 	    todo.content    = req.body.content;
 	    todo.updated_at = Date.now();
 	    todo.save( function ( err, todo, count ){
@@ -67,7 +69,7 @@ var Todo     = mongoose.model( 'Todo' );
 	});
 
 	// view the individual todo
-	app.get( '/view/:id',  function ( req, res ){
+	/*app.get( '/view/:id',  function ( req, res ){
 		
 	   Todo.findById( req.params.id, function ( err, todo ){
 	    res.render( 'view', {
@@ -76,7 +78,19 @@ var Todo     = mongoose.model( 'Todo' );
 	        current : req.params.id
 	    });
 	  }); 
+	 });*/
+
+	 app.get( '/view/:slug',  function ( req, res ){
+		
+	   Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
+	    res.render( 'view', {
+	        title   : 'Express Todo Example',
+	        todo    : todo
+	    });
+	  }); 
 	 });
+
+
 
 
 
@@ -277,7 +291,14 @@ var Todo     = mongoose.model( 'Todo' );
 
 
 
-
+function convertToSlug(Text)
+{
+    return Text
+        .toLowerCase()
+        .replace(/[^\w ]+/g,'')
+        .replace(/ +/g,'-')
+        ;
+}
 
 
 // route middleware to ensure user is logged in
