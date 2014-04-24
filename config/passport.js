@@ -131,6 +131,7 @@ module.exports = function(passport) {
     // =========================================================================
     // FACEBOOK ================================================================
     // =========================================================================
+    /*
     passport.use(new FacebookStrategy({
 
         clientID        : configAuth.facebookAuth.clientID,
@@ -353,6 +354,6 @@ module.exports = function(passport) {
 
         });
 
-    }));
+    })); */
 
 };

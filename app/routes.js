@@ -7,7 +7,7 @@ var Todo     = mongoose.model( 'Todo' );
 	
 	//
 	// show the home page (will also have our login links)
-	app.get('/', function(req, res) {
+	app.get('/', templateLoggedIn, function(req, res) {
 		Todo.find( function ( err, todos, count ){
 	    res.render( 'index', {
 	      title : 'Express Todo Example',
@@ -26,9 +26,10 @@ var Todo     = mongoose.model( 'Todo' );
 	// create a todo
 	app.post( '/create',isLoggedIn, function ( req, res ){
 		  new Todo({
+		  	title      : req.body.title,
 		    content    : req.body.content,
 		    updated_at : Date.now(),
-		    slug: convertToSlug(req.body.content)
+		    slug: convertToSlug(req.body.title)
 		  }).save( function( err, todo, count ){
 		    res.redirect( '/profile' );
 		  });
@@ -47,10 +48,10 @@ var Todo     = mongoose.model( 'Todo' );
 	// edit the todo
 	app.get( '/edit/:slug', isLoggedIn, function ( req, res ){
 
-	  Todo.find( function ( err, todos ){
+	 Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
 	    res.render( 'edit', {
 	        title   : 'Express Todo Example',
-	        todos   : todos,
+	        todo   : todo,
 	        current : req.params.slug
 	    });
 	  }); 
@@ -60,6 +61,7 @@ var Todo     = mongoose.model( 'Todo' );
 	// update the todo
 	app.post( '/update/:slug', isLoggedIn, function ( req, res ){
 	  Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
+	  	todo.title    = req.body.title;
 	    todo.content    = req.body.content;
 	    todo.updated_at = Date.now();
 	    todo.save( function ( err, todo, count ){
@@ -96,7 +98,7 @@ var Todo     = mongoose.model( 'Todo' );
 
 
 	// PROFILE SECTION =========================
-	app.get('/profile', isLoggedIn, function(req, res) {
+	app.get('/profile', isLoggedIn, templateLoggedIn, function(req, res) {
 	
 		Todo.find( function ( err, todos, count ){
 	    res.render( 'profile.ejs', {
@@ -152,7 +154,7 @@ var Todo     = mongoose.model( 'Todo' );
 		}));
 
 	// facebook -------------------------------
-
+	/*
 		// send to facebook to do the authentication
 		app.get('/auth/facebook', passport.authenticate('facebook', { scope : 'email' }));
 
@@ -188,6 +190,8 @@ var Todo     = mongoose.model( 'Todo' );
 				failureRedirect : '/'
 			}));
 
+	*/
+
 // =============================================================================
 // AUTHORIZE (ALREADY LOGGED IN / CONNECTING OTHER SOCIAL ACCOUNT) =============
 // =============================================================================
@@ -202,6 +206,7 @@ var Todo     = mongoose.model( 'Todo' );
 			failureFlash : true // allow flash messages
 		}));
 
+	/*
 	// facebook -------------------------------
 
 		// send to facebook to do the authentication
@@ -239,6 +244,8 @@ var Todo     = mongoose.model( 'Todo' );
 				failureRedirect : '/'
 			}));
 
+	*/
+
 // =============================================================================
 // UNLINK ACCOUNTS =============================================================
 // =============================================================================
@@ -256,6 +263,7 @@ var Todo     = mongoose.model( 'Todo' );
 		});
 	});
 
+	/*
 	// facebook -------------------------------
 	app.get('/unlink/facebook', function(req, res) {
 		var user            = req.user;
@@ -283,6 +291,8 @@ var Todo     = mongoose.model( 'Todo' );
 		});
 	});
 
+*/
+
 
 };
 
@@ -307,4 +317,10 @@ function isLoggedIn(req, res, next) {
 		return next();
 
 	res.redirect('/');
+}
+
+// route middleware to ensure user is logged in
+function templateLoggedIn(req, res, next) {
+	 res.locals.login = req.isAuthenticated();
+  	 next();
 }

@@ -1,4 +1,4 @@
-require( '../app/models/todo.js' );
+/*require( '../app/models/todo.js' );
 
 var mongoose = require( 'mongoose' );
 var Todo     = mongoose.model( 'Todo' );
@@ -32,3 +32,4 @@ exports.destroy = function ( req, res ){
     });
   });
 };
+*/
