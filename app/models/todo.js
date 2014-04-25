@@ -6,7 +6,9 @@ var Todo = new Schema({
     title      : String,
     content    : String,
     updated_at : Date,
-    slug       : String
+    slug       : String,
+    image_path_full: String,
+    image_path: String
 });
  
 mongoose.model( 'Todo', Todo );

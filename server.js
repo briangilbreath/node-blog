@@ -12,6 +12,8 @@ var flash    = require('connect-flash');
 var http     = require('http');
 var path     = require('path');
 
+global.dirPath = __dirname;
+
 var configDB = require('./config/database.js');
 require( './app/models/todo.js' );
 //var todo     = require('./config/todos.js');	
@@ -35,6 +37,10 @@ app.configure(function() {
 
 	// required for passport
 	app.use(express.session({ secret: 'ilovescotchscotchyscotchscotch' })); // session secret
+	app.use(function(req,res,next){
+    	res.locals.login = req.isAuthenticated();
+  	 	next();
+	});
 	app.use(passport.initialize());
 	app.use(passport.session()); // persistent login sessions
 	app.use(flash()); // use connect-flash for flash messages stored in session

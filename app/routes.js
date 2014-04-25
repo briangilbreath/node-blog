@@ -1,11 +1,13 @@
 module.exports = function(app, passport, express) {
-
+var fs = require('fs');
+var im = require('imagemagick');
 var mongoose = require( 'mongoose' );
 var Todo     = mongoose.model( 'Todo' );
+/// Include the node file module
+
+
 // normal routes ===============================================================
 
-	
-	//
 	// show the home page (will also have our login links)
 	app.get('/', templateLoggedIn, function(req, res) {
 		Todo.find( function ( err, todos, count ){
@@ -18,22 +20,89 @@ var Todo     = mongoose.model( 'Todo' );
 		
 	});
 
-	//app.get( '/', todo.list );
-
 	// add this before app.use( express.json());
 	app.use( express.bodyParser());
 	
 	// create a todo
 	app.post( '/create',isLoggedIn, function ( req, res ){
-		  new Todo({
-		  	title      : req.body.title,
-		    content    : req.body.content,
-		    updated_at : Date.now(),
-		    slug: convertToSlug(req.body.title)
-		  }).save( function( err, todo, count ){
-		    res.redirect( '/profile' );
-		  });
+
+
+		//console.log(req);
+	  	fs.readFile(req.files.image.path, function (err, data) {
+	  	//console.log('file read error: ' + err)
+		var imageName = req.files.image.name;
+		//console.log('image name: ' + imageName);
+			/// If there's an error
+			if(!imageName){
+
+				console.log("There was an error")
+				newPath = '';
+
+			} else {
+
+			  var newPath = global.dirPath + "/uploads/fullsize/" + imageName;
+			  var thumbPath = global.dirPath + "/uploads/thumbs/" + imageName;
+			  console.log(data);
+			  console.log('newPath: ' + newPath);
+			  /// write file to uploads/fullsize folder
+			  fs.writeFile(newPath, data, function (err) {
+
+			  	/// write file to uploads/thumbs folder
+			  im.resize({
+				  srcPath: newPath,
+				  dstPath: thumbPath,
+				  width:   200
+				}, function(err, stdout, stderr){
+				  if (err) throw err;
+				  console.log('resized image to fit within 200x200px');
+				});
+
+			  	if(err){
+			  			console.log('file write error: ' + err);
+			  	}
+			  
+			  });
+			}
+
+
+			
+			new Todo({
+			  	title      : req.body.title,
+			    content    : req.body.content,
+			    updated_at : Date.now(),
+			    image_path_full : newPath,
+			    image_path : imageName,
+			    slug: convertToSlug(req.body.title)
+			  		}).save( function( err, todo, count ){
+			    res.redirect( '/profile' );
+			});
+		  
+
+
 		});
+
+	});
+
+
+
+
+	/// Show files
+	app.get('/uploads/fullsize/:file', function (req, res){
+		file = req.params.file;
+		var img = fs.readFileSync(global.dirPath + "/uploads/fullsize/" + file);
+		res.writeHead(200, {'Content-Type': 'image/jpg' });
+		res.end(img, 'binary');
+
+	});
+
+	app.get('/uploads/thumbs/:file', function (req, res){
+		file = req.params.file;
+		var img = fs.readFileSync(global.dirPath + "/uploads/thumbs/" + file);
+		res.writeHead(200, {'Content-Type': 'image/jpg' });
+		res.end(img, 'binary');
+
+	});
+
 
 	// delete a todo
 	app.get( '/destroy/:slug',isLoggedIn, function ( req, res ){
@@ -100,7 +169,7 @@ var Todo     = mongoose.model( 'Todo' );
 	// PROFILE SECTION =========================
 	app.get('/profile', isLoggedIn, templateLoggedIn, function(req, res) {
 	
-		Todo.find( function ( err, todos, count ){
+	 Todo.find().sort( '-updated_at' ).exec( function ( err, todos ){
 	    res.render( 'profile.ejs', {
 	      title : 'Express Todo Example',
 	      todos : todos,
