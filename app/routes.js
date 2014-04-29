@@ -1,15 +1,68 @@
 module.exports = function(app, passport, express) {
+
 var fs = require('fs');
 var im = require('imagemagick');
-var mongoose = require( 'mongoose' );
+
+//var mongoose = require( 'mongoose' );
+var mongoose = require( 'mongoose-paginate' );
 var Todo     = mongoose.model( 'Todo' );
-/// Include the node file module
 
-
+var pageCount = 1;
 // normal routes ===============================================================
 
-	// show the home page (will also have our login links)
+
+
+		// show the home page (will also have our login links)
 	app.get('/', templateLoggedIn, function(req, res) {
+
+		Todo.paginate({}, 1, pageCount, function(error, pageCount, todos, itemCount) {
+
+		    res.render( 'index', {
+		      title : 'Express Todo Example',
+		      todos : todos
+		    });
+
+		     if (error) {
+   				console.error(error);
+			  } else {
+			      console.log('Pages:', pageCount);
+			    console.log(todos);
+			  }
+
+	  	});
+
+	});
+
+
+	//show paginated homepage
+	app.get('/page/:pagenum', templateLoggedIn, function(req, res) {
+
+		pageNum = req.params.pagenum;
+		pageNum = Number(pageNum) + 1;
+
+		Todo.paginate({}, pageNum, pageCount, function(error, pageCount, todos, itemCount) {
+
+		    res.render( 'index', {
+		      title : 'Express Todo Example',
+		      todos : todos
+		    });
+
+		     if (error) {
+   				console.error(error);
+			  } else {
+			      console.log('Pages:', pageCount);
+			    console.log(todos);
+			  }
+
+	  	});
+
+	
+	});
+
+
+
+	// show the home page (will also have our login links)
+	/*app.get('/', templateLoggedIn, function(req, res) {
 		Todo.find( function ( err, todos, count ){
 	    res.render( 'index', {
 	      title : 'Express Todo Example',
@@ -17,14 +70,13 @@ var Todo     = mongoose.model( 'Todo' );
 	    });
 	  });
 
-		
-	});
+	});*/
 
 	// add this before app.use( express.json());
 	app.use( express.bodyParser());
 	
 	// create a todo
-	app.post( '/create',isLoggedIn, function ( req, res ){
+	app.post( '/create', isLoggedIn, function ( req, res ){
 
 
 		//console.log(req);
@@ -86,7 +138,7 @@ var Todo     = mongoose.model( 'Todo' );
 
 
 
-	/// Show files
+	/// Show files/ routes for getting files
 	app.get('/uploads/fullsize/:file', function (req, res){
 		file = req.params.file;
 		var img = fs.readFileSync(global.dirPath + "/uploads/fullsize/" + file);
@@ -129,14 +181,84 @@ var Todo     = mongoose.model( 'Todo' );
 
 	// update the todo
 	app.post( '/update/:slug', isLoggedIn, function ( req, res ){
-	  Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
-	  	todo.title    = req.body.title;
-	    todo.content    = req.body.content;
-	    todo.updated_at = Date.now();
-	    todo.save( function ( err, todo, count ){
-	      res.redirect( '/profile' );
-	    });
-	  });
+
+
+
+		//console.log(req);
+	  	fs.readFile(req.files.image.path, function (err, data) {
+	  	//console.log('file read error: ' + err)
+		var imageName = req.files.image.name;
+
+
+
+		console.log('image name: ' + imageName);
+			/// If there's an error
+			if(!imageName){
+
+			    Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
+			  	todo.title    = req.body.title;
+			    todo.content    = req.body.content;
+			    todo.updated_at = Date.now();
+			    todo.save( function ( err, todo, count ){
+			      res.redirect( '/profile' );
+			    });
+			  });
+
+
+			} else {
+
+			  var newPath = global.dirPath + "/uploads/fullsize/" + imageName;
+			  var thumbPath = global.dirPath + "/uploads/thumbs/" + imageName;
+			  console.log(data);
+			  console.log('newPath: ' + newPath);
+			  /// write file to uploads/fullsize folder
+			  fs.writeFile(newPath, data, function (err) {
+
+			  	/// write file to uploads/thumbs folder
+			  im.resize({
+				  srcPath: newPath,
+				  dstPath: thumbPath,
+				  width:   200
+				}, function(err, stdout, stderr){
+				  if (err) throw err;
+				  console.log('resized image to fit within 200x200px');
+				});
+
+			  	if(err){
+			  			console.log('file write error: ' + err);
+			  	}
+			  
+			  });
+
+
+
+			  Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
+			  	todo.title    = req.body.title;
+			    todo.content    = req.body.content;
+			    todo.updated_at = Date.now();
+			    todo.image_path_full = newPath;
+			    todo.image_path = imageName;
+			    todo.save( function ( err, todo, count ){
+			      res.redirect( '/profile' );
+			    });
+			  });
+
+
+
+
+			}
+
+
+
+
+
+		});	
+
+
+
+
+
+
 	});
 
 	// view the individual todo

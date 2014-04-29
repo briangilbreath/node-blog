@@ -13,6 +13,7 @@
     "passport-google-oauth": "~0.1.5",
     "connect-flash": "~0.1.1",
     "bcrypt-nodejs": "latest",
-    "imagemagick": "latest"
+    "imagemagick": "latest",
+    "mongoose-paginate": "~2.1.0"
   }
 }

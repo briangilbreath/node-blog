@@ -78,7 +78,9 @@
 
 			<% todos.forEach( function ( todo ){ %>
 			  <p>
+			  <% if(todo.image_path != '') { %>
 			  <img src="/uploads/thumbs/<%= todo.image_path  %>">
+			  <% } %>
 			  	<h3><%= todo.title %></h3>
 			  	<span><%= todo.content %></span>
 			  	 <span>
