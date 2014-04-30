@@ -44,6 +44,9 @@
 
 	<h1>Enter Todos</h1>
 	<form class="form-horizontal"  role="form" action="/create" method="post" enctype="multipart/form-data" accept-charset="utf-8">
+
+	   <input type="hidden" name="_csrf" value="<% //csrftoken %>" /> 
+
 		<div class="form-group">
 		    <label for="title" class="col-sm-2 control-label">Title</label>
 		    <div class="col-sm-10">

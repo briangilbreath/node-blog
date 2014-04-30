@@ -2,6 +2,7 @@ module.exports = function(app, passport, express) {
 
 var fs = require('fs');
 var im = require('imagemagick');
+var formidable = require('formidable');
 
 var mongoose = require( 'mongoose' );
 //var mongoose = require( 'mongoose-paginate' );
@@ -53,23 +54,37 @@ var pageCount = 2; //posts per page
 	// create a todo
 	app.post( '/create', isLoggedIn, function ( req, res ){
 
+		var form = new formidable.IncomingForm();
 
-		//console.log(req);
-	  	fs.readFile(req.files.image.path, function (err, data) {
-	  	//console.log('file read error: ' + err)
-		var imageName = req.files.image.name;
-		//console.log('image name: ' + imageName);
-			/// If there's an error
-			if(!imageName){
+		form.parse(req, function(err, fields, files) {
+	      console.log("Title: " + fields.title);
+	      console.log("Content: " + fields.content);
 
-				console.log("There was an error")
-				newPath = '';
+	      console.log("Image Origin Path: " + files.image.path);
+	      console.log("Image Name: " + files.image.name);
 
-			} else {
+	      var title = fields.title;
+	      var content = fields.content;
 
-			  var newPath = global.dirPath + "/uploads/fullsize/" + imageName;
+	      var imagePath =  files.image.path;
+	      var imageName = files.image.name;
+
+
+	      fs.readFile(imagePath, function (err, data) {
+
+
+	      if(!imageName){
+
+	      	console.log("There was an error, or no image was selected.")
+			newPath = '';
+			thumbPath = '';
+			imageName = '';
+
+	      }else{
+
+
+	      	var newPath = global.dirPath + "/uploads/fullsize/" + imageName;
 			  var thumbPath = global.dirPath + "/uploads/thumbs/" + imageName;
-			  console.log(data);
 			  console.log('newPath: ' + newPath);
 			  /// write file to uploads/fullsize folder
 			  fs.writeFile(newPath, data, function (err) {
@@ -81,7 +96,7 @@ var pageCount = 2; //posts per page
 				  width:   200
 				}, function(err, stdout, stderr){
 				  if (err) throw err;
-				  console.log('resized image to fit within 200x200px');
+				  console.log('imagemagick resized image to fit within 200x200px');
 				});
 
 			  	if(err){
@@ -89,23 +104,44 @@ var pageCount = 2; //posts per page
 			  	}
 			  
 			  });
-			}
 
 
-			// TODO: see if slug exists before save.
-			new Todo({
-			  	title      : req.body.title,
-			    content    : req.body.content,
-			    updated_at : Date.now(),
-			    image_path_full : newPath,
-			    image_path : imageName,
-			    slug: convertToSlug(req.body.title)
-			  		}).save( function( err, todo, count ){
-			    res.redirect( '/profile' );
+	      }
+
+
+	      // TODO: see if slug exists before save.
+			Todo.findOne( {'slug' : convertToSlug(title)}, function ( err, todo ){
+			 	 console.log(todo);
+			  	if(todo){
+				
+					req.session.messages = ['Post already exists!']
+					res.redirect( '/profile' );
+
+			  	}else{
+
+			  		req.session.messages = ['Posted!'];
+
+					new Todo({
+					  	title      : title,
+					    content    : content,
+					    created_at : Date.now(),
+					    updated_at : Date.now(),
+					    image_path_full : newPath,
+					    image_path : imageName,
+					    slug: convertToSlug(title)
+					  		}).save( function( err, todo, count ){
+					    res.redirect( '/profile' );
+					});
+			  	}
+
+			 });
+
+
 			});
-		  
-		});
 
+	    });
+
+	
 	});
 
 
@@ -155,26 +191,39 @@ var pageCount = 2; //posts per page
 	// update the todo
 	app.post( '/update/:slug', isLoggedIn, function ( req, res ){
 
-		//console.log(req);
-	  	fs.readFile(req.files.image.path, function (err, data) {
-	  	//console.log('file read error: ' + err)
-		var imageName = req.files.image.name;
 
-		console.log('image name: ' + imageName);
-			/// If there's an error
-			if(!imageName){
+		var form = new formidable.IncomingForm();
+
+		form.parse(req, function(err, fields, files) {
+	      console.log("Title: " + fields.title);
+	      console.log("Content: " + fields.content);
+
+	      console.log("Image Origin Path: " + files.image.path);
+	      console.log("Image Name: " + files.image.name);
+
+
+	      var title = fields.title;
+	      var content = fields.content;
+
+	      var imagePath =  files.image.path;
+	      var imageName = files.image.name;
+
+
+	      fs.readFile(imagePath, function (err, data) {
+
+	      	if(!imageName){
 
 			    Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
-			  	todo.title    = req.body.title;
-			    todo.content    = req.body.content;
+			  	todo.title    = title;
+			    todo.content    = content;
 			    todo.updated_at = Date.now();
 			    todo.save( function ( err, todo, count ){
 			      res.redirect( '/profile' );
 			    });
 			  });
 
-
 			} else {
+
 
 			  var newPath = global.dirPath + "/uploads/fullsize/" + imageName;
 			  var thumbPath = global.dirPath + "/uploads/thumbs/" + imageName;
@@ -200,8 +249,8 @@ var pageCount = 2; //posts per page
 			  });
 
 			  Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
-			  	todo.title    = req.body.title;
-			    todo.content    = req.body.content;
+			  	todo.title      = title;
+			    todo.content    = content;
 			    todo.updated_at = Date.now();
 			    todo.image_path_full = newPath;
 			    todo.image_path = imageName;
@@ -210,9 +259,12 @@ var pageCount = 2; //posts per page
 			    });
 			  });
 
-			}
 
-		});	
+			} //endif
+
+	      });
+
+	 	});
 
 	});
 
@@ -353,5 +405,6 @@ function isLoggedIn(req, res, next) {
 // route middleware to ensure user is logged in
 function templateLoggedIn(req, res, next) {
 	 res.locals.login = req.isAuthenticated();
+	 
   	 next();
 }
