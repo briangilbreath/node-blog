@@ -3,32 +3,27 @@ module.exports = function(app, passport, express) {
 var fs = require('fs');
 var im = require('imagemagick');
 
-//var mongoose = require( 'mongoose' );
-var mongoose = require( 'mongoose-paginate' );
+var mongoose = require( 'mongoose' );
+//var mongoose = require( 'mongoose-paginate' );
 var Todo     = mongoose.model( 'Todo' );
 
-var pageCount = 1;
+var pageCount = 2; //posts per page
+
 // normal routes ===============================================================
 
 
 
-		// show the home page (will also have our login links)
+	// show the home page (will also have our login links)
 	app.get('/', templateLoggedIn, function(req, res) {
 
-		Todo.paginate({}, 1, pageCount, function(error, pageCount, todos, itemCount) {
+		 Todo.find().sort( '-updated_at' ).skip(0).limit(pageCount).exec( function ( err, todos ){
 
 		    res.render( 'index', {
 		      title : 'Express Todo Example',
-		      todos : todos
+		      todos : todos,
+		      pageNum: 0
 		    });
-
-		     if (error) {
-   				console.error(error);
-			  } else {
-			      console.log('Pages:', pageCount);
-			    console.log(todos);
-			  }
-
+   
 	  	});
 
 	});
@@ -37,43 +32,23 @@ var pageCount = 1;
 	//show paginated homepage
 	app.get('/page/:pagenum', templateLoggedIn, function(req, res) {
 
-		pageNum = req.params.pagenum;
-		pageNum = Number(pageNum) + 1;
+		pageNum = Number(req.params.pagenum);
+		console.log(pageNum);
+		skip = pageNum * pageCount;
 
-		Todo.paginate({}, pageNum, pageCount, function(error, pageCount, todos, itemCount) {
+		 Todo.find().sort( '-updated_at' ).skip(skip).limit(pageCount).exec( function ( err, todos ){
 
 		    res.render( 'index', {
 		      title : 'Express Todo Example',
-		      todos : todos
+		      todos : todos,
+		      pageNum: pageNum
 		    });
-
-		     if (error) {
-   				console.error(error);
-			  } else {
-			      console.log('Pages:', pageCount);
-			    console.log(todos);
-			  }
 
 	  	});
 
 	
 	});
 
-
-
-	// show the home page (will also have our login links)
-	/*app.get('/', templateLoggedIn, function(req, res) {
-		Todo.find( function ( err, todos, count ){
-	    res.render( 'index', {
-	      title : 'Express Todo Example',
-	      todos : todos
-	    });
-	  });
-
-	});*/
-
-	// add this before app.use( express.json());
-	app.use( express.bodyParser());
 	
 	// create a todo
 	app.post( '/create', isLoggedIn, function ( req, res ){
@@ -99,7 +74,7 @@ var pageCount = 1;
 			  /// write file to uploads/fullsize folder
 			  fs.writeFile(newPath, data, function (err) {
 
-			  	/// write file to uploads/thumbs folder
+			  /// write file to uploads/thumbs folder
 			  im.resize({
 				  srcPath: newPath,
 				  dstPath: thumbPath,
@@ -117,7 +92,7 @@ var pageCount = 1;
 			}
 
 
-			
+			// TODO: see if slug exists before save.
 			new Todo({
 			  	title      : req.body.title,
 			    content    : req.body.content,
@@ -129,8 +104,6 @@ var pageCount = 1;
 			    res.redirect( '/profile' );
 			});
 		  
-
-
 		});
 
 	});
@@ -182,14 +155,10 @@ var pageCount = 1;
 	// update the todo
 	app.post( '/update/:slug', isLoggedIn, function ( req, res ){
 
-
-
 		//console.log(req);
 	  	fs.readFile(req.files.image.path, function (err, data) {
 	  	//console.log('file read error: ' + err)
 		var imageName = req.files.image.name;
-
-
 
 		console.log('image name: ' + imageName);
 			/// If there's an error
@@ -215,7 +184,7 @@ var pageCount = 1;
 			  fs.writeFile(newPath, data, function (err) {
 
 			  	/// write file to uploads/thumbs folder
-			  im.resize({
+			   im.resize({
 				  srcPath: newPath,
 				  dstPath: thumbPath,
 				  width:   200
@@ -230,8 +199,6 @@ var pageCount = 1;
 			  
 			  });
 
-
-
 			  Todo.findOne( {'slug' : req.params.slug}, function ( err, todo ){
 			  	todo.title    = req.body.title;
 			    todo.content    = req.body.content;
@@ -243,21 +210,9 @@ var pageCount = 1;
 			    });
 			  });
 
-
-
-
 			}
 
-
-
-
-
 		});	
-
-
-
-
-
 
 	});
 
@@ -284,10 +239,6 @@ var pageCount = 1;
 	 });
 
 
-
-
-
-
 	// PROFILE SECTION =========================
 	app.get('/profile', isLoggedIn, templateLoggedIn, function(req, res) {
 	
@@ -308,9 +259,6 @@ var pageCount = 1;
 	});
 
 
-
-
-	
 
 
 // =============================================================================
@@ -344,44 +292,7 @@ var pageCount = 1;
 			failureFlash : true // allow flash messages
 		}));
 
-	// facebook -------------------------------
-	/*
-		// send to facebook to do the authentication
-		app.get('/auth/facebook', passport.authenticate('facebook', { scope : 'email' }));
 
-		// handle the callback after facebook has authenticated the user
-		app.get('/auth/facebook/callback',
-			passport.authenticate('facebook', {
-				successRedirect : '/profile',
-				failureRedirect : '/'
-			}));
-
-	// twitter --------------------------------
-
-		// send to twitter to do the authentication
-		app.get('/auth/twitter', passport.authenticate('twitter', { scope : 'email' }));
-
-		// handle the callback after twitter has authenticated the user
-		app.get('/auth/twitter/callback',
-			passport.authenticate('twitter', {
-				successRedirect : '/profile',
-				failureRedirect : '/'
-			}));
-
-
-	// google ---------------------------------
-
-		// send to google to do the authentication
-		app.get('/auth/google', passport.authenticate('google', { scope : ['profile', 'email'] }));
-
-		// the callback after google has authenticated the user
-		app.get('/auth/google/callback',
-			passport.authenticate('google', {
-				successRedirect : '/profile',
-				failureRedirect : '/'
-			}));
-
-	*/
 
 // =============================================================================
 // AUTHORIZE (ALREADY LOGGED IN / CONNECTING OTHER SOCIAL ACCOUNT) =============
@@ -397,45 +308,6 @@ var pageCount = 1;
 			failureFlash : true // allow flash messages
 		}));
 
-	/*
-	// facebook -------------------------------
-
-		// send to facebook to do the authentication
-		app.get('/connect/facebook', passport.authorize('facebook', { scope : 'email' }));
-
-		// handle the callback after facebook has authorized the user
-		app.get('/connect/facebook/callback',
-			passport.authorize('facebook', {
-				successRedirect : '/profile',
-				failureRedirect : '/'
-			}));
-
-	// twitter --------------------------------
-
-		// send to twitter to do the authentication
-		app.get('/connect/twitter', passport.authorize('twitter', { scope : 'email' }));
-
-		// handle the callback after twitter has authorized the user
-		app.get('/connect/twitter/callback',
-			passport.authorize('twitter', {
-				successRedirect : '/profile',
-				failureRedirect : '/'
-			}));
-
-
-	// google ---------------------------------
-
-		// send to google to do the authentication
-		app.get('/connect/google', passport.authorize('google', { scope : ['profile', 'email'] }));
-
-		// the callback after google has authorized the user
-		app.get('/connect/google/callback',
-			passport.authorize('google', {
-				successRedirect : '/profile',
-				failureRedirect : '/'
-			}));
-
-	*/
 
 // =============================================================================
 // UNLINK ACCOUNTS =============================================================
@@ -454,42 +326,10 @@ var pageCount = 1;
 		});
 	});
 
-	/*
-	// facebook -------------------------------
-	app.get('/unlink/facebook', function(req, res) {
-		var user            = req.user;
-		user.facebook.token = undefined;
-		user.save(function(err) {
-			res.redirect('/profile');
-		});
-	});
-
-	// twitter --------------------------------
-	app.get('/unlink/twitter', function(req, res) {
-		var user           = req.user;
-		user.twitter.token = undefined;
-		user.save(function(err) {
-			res.redirect('/profile');
-		});
-	});
-
-	// google ---------------------------------
-	app.get('/unlink/google', function(req, res) {
-		var user          = req.user;
-		user.google.token = undefined;
-		user.save(function(err) {
-			res.redirect('/profile');
-		});
-	});
-
-*/
+	
 
 
 };
-
-
-
-
 
 
 function convertToSlug(Text)
